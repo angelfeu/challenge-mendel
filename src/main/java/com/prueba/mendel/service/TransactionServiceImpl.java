@@ -1,0 +1,24 @@
+package com.prueba.mendel.service;
+
+import com.prueba.mendel.domain.Transaction;
+import com.prueba.mendel.dto.TransactionRequest;
+import com.prueba.mendel.repository.TransactionRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class TransactionServiceImpl implements TransactionService {
+
+    private final TransactionRepository transactionRepository;
+
+    @Override
+    public void save(Long id, TransactionRequest request) {
+        transactionRepository.save(Transaction.builder()
+                .id(id)
+                .amount(request.getAmount())
+                .type(request.getType())
+                .parentId(request.getParentId())
+                .build());
+    }
+}
