@@ -10,9 +10,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -59,5 +63,23 @@ class TransactionControllerTest extends ControllerTest {
         TransactionRequest request = new TransactionRequest("", BigDecimal.valueOf(5000), null);
 
         perform(put("/transactions/10"), request, status().isBadRequest());
+    }
+
+    @Test
+    void get_by_type_returns_ids() throws Exception {
+        when(transactionService.findIdsByType("cars")).thenReturn(List.of(10L, 11L));
+
+        var response = perform(get("/transactions/types/cars"), null, List.class, status().isOk());
+
+        assertEquals(2, response.size());
+    }
+
+    @Test
+    void get_by_type_returns_empty_list_when_no_results() throws Exception {
+        when(transactionService.findIdsByType("unknown")).thenReturn(Collections.emptyList());
+
+        var response = perform(get("/transactions/types/unknown"), null, List.class, status().isOk());
+
+        assertEquals(0, response.size());
     }
 }
