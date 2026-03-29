@@ -6,6 +6,8 @@ import com.prueba.mendel.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class TransactionServiceImpl implements TransactionService {
@@ -20,5 +22,12 @@ public class TransactionServiceImpl implements TransactionService {
                 .type(request.getType())
                 .parentId(request.getParentId())
                 .build());
+    }
+
+    @Override
+    public List<Long> findIdsByType(String type) {
+        return transactionRepository.findByType(type).stream()
+                .map(Transaction::getId)
+                .toList();
     }
 }

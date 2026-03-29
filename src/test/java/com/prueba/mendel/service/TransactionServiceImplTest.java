@@ -11,10 +11,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionServiceImplTest {
@@ -38,6 +41,26 @@ class TransactionServiceImplTest {
         assertEquals(BigDecimal.valueOf(5000), saved.getAmount());
         assertEquals("cars", saved.getType());
         assertNull(saved.getParentId());
+    }
+
+    @Test
+    void find_ids_by_type_returns_matching_ids() {
+        Transaction t1 = Transaction.builder().id(10L).amount(BigDecimal.valueOf(5000)).type("cars").build();
+        Transaction t2 = Transaction.builder().id(11L).amount(BigDecimal.valueOf(3000)).type("cars").build();
+        when(transactionRepository.findByType("cars")).thenReturn(List.of(t1, t2));
+
+        List<Long> ids = transactionService.findIdsByType("cars");
+
+        assertEquals(List.of(10L, 11L), ids);
+    }
+
+    @Test
+    void find_ids_by_type_returns_empty_when_no_match() {
+        when(transactionRepository.findByType("unknown")).thenReturn(List.of());
+
+        List<Long> ids = transactionService.findIdsByType("unknown");
+
+        assertTrue(ids.isEmpty());
     }
 
     @Test

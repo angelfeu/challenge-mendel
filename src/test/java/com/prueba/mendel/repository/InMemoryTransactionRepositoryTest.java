@@ -5,8 +5,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InMemoryTransactionRepositoryTest {
 
@@ -29,6 +31,27 @@ class InMemoryTransactionRepositoryTest {
         repository.save(transaction);
 
         assertEquals(1, repository.count());
+    }
+
+    @Test
+    void find_by_type_returns_matching_transactions() {
+        repository.save(Transaction.builder().id(10L).amount(BigDecimal.valueOf(5000)).type("cars").build());
+        repository.save(Transaction.builder().id(11L).amount(BigDecimal.valueOf(3000)).type("cars").build());
+        repository.save(Transaction.builder().id(12L).amount(BigDecimal.valueOf(1000)).type("shopping").build());
+
+        List<Transaction> result = repository.findByType("cars");
+
+        assertEquals(2, result.size());
+        assertTrue(result.stream().allMatch(t -> t.getType().equals("cars")));
+    }
+
+    @Test
+    void find_by_type_returns_empty_when_no_match() {
+        repository.save(Transaction.builder().id(10L).amount(BigDecimal.valueOf(5000)).type("cars").build());
+
+        List<Transaction> result = repository.findByType("unknown");
+
+        assertTrue(result.isEmpty());
     }
 
     @Test
