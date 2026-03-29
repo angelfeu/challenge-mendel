@@ -10,11 +10,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.prueba.mendel.exception.TransactionNotFoundException;
+
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,6 +65,37 @@ class TransactionServiceImplTest {
         List<Long> ids = transactionService.findIdsByType("unknown");
 
         assertTrue(ids.isEmpty());
+    }
+
+    @Test
+    void calculate_sum_returns_amount_of_single_transaction() {
+        Transaction t = Transaction.builder().id(10L).amount(BigDecimal.valueOf(5000)).type("cars").build();
+        when(transactionRepository.findById(10L)).thenReturn(Optional.of(t));
+        when(transactionRepository.findByParentId(10L)).thenReturn(List.of());
+
+        assertEquals(BigDecimal.valueOf(5000), transactionService.calculateSum(10L));
+    }
+
+    @Test
+    void calculate_sum_includes_transitive_children() {
+        // PDF example: 10 -> 11 -> 12, sum(10) = 20000
+        Transaction t10 = Transaction.builder().id(10L).amount(BigDecimal.valueOf(5000)).type("cars").build();
+        Transaction t11 = Transaction.builder().id(11L).amount(BigDecimal.valueOf(10000)).type("shopping").parentId(10L).build();
+        Transaction t12 = Transaction.builder().id(12L).amount(BigDecimal.valueOf(5000)).type("shopping").parentId(11L).build();
+
+        when(transactionRepository.findById(10L)).thenReturn(Optional.of(t10));
+        when(transactionRepository.findByParentId(10L)).thenReturn(List.of(t11));
+        when(transactionRepository.findByParentId(11L)).thenReturn(List.of(t12));
+        when(transactionRepository.findByParentId(12L)).thenReturn(List.of());
+
+        assertEquals(BigDecimal.valueOf(20000), transactionService.calculateSum(10L));
+    }
+
+    @Test
+    void calculate_sum_throws_when_transaction_not_found() {
+        when(transactionRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(TransactionNotFoundException.class, () -> transactionService.calculateSum(99L));
     }
 
     @Test

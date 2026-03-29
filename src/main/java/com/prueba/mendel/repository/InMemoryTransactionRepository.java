@@ -4,6 +4,7 @@ import com.prueba.mendel.domain.Transaction;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Repository
@@ -20,6 +21,18 @@ public class InMemoryTransactionRepository implements TransactionRepository {
     public List<Transaction> findByType(String type) {
         return store.values().stream()
                 .filter(t -> t.getType().equals(type))
+                .toList();
+    }
+
+    @Override
+    public Optional<Transaction> findById(Long id) {
+        return Optional.ofNullable(store.get(id));
+    }
+
+    @Override
+    public List<Transaction> findByParentId(Long parentId) {
+        return store.values().stream()
+                .filter(t -> parentId.equals(t.getParentId()))
                 .toList();
     }
 

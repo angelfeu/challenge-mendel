@@ -2,6 +2,7 @@ package com.prueba.mendel.service;
 
 import com.prueba.mendel.domain.Transaction;
 import com.prueba.mendel.dto.TransactionRequest;
+import com.prueba.mendel.exception.TransactionNotFoundException;
 import com.prueba.mendel.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,14 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public BigDecimal calculateSum(Long id) {
-        throw new UnsupportedOperationException();
+        Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new TransactionNotFoundException(id));
+        return sumRecursive(transaction);
+    }
+
+    private BigDecimal sumRecursive(Transaction transaction) {
+        return transactionRepository.findByParentId(transaction.getId()).stream()
+                .map(this::sumRecursive)
+                .reduce(transaction.getAmount(), BigDecimal::add);
     }
 }
