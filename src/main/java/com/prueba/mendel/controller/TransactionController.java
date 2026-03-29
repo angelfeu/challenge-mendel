@@ -1,6 +1,7 @@
 package com.prueba.mendel.controller;
 
 import com.prueba.mendel.dto.StatusResponse;
+import com.prueba.mendel.dto.SumResponse;
 import com.prueba.mendel.dto.TransactionRequest;
 import com.prueba.mendel.service.TransactionService;
 import jakarta.validation.Valid;
@@ -32,5 +33,10 @@ public class TransactionController {
     @GetMapping("/types/{type}")
     public ResponseEntity<List<Long>> findByType(@PathVariable String type) {
         return ResponseEntity.ok(transactionService.findIdsByType(type));
+    }
+
+    @GetMapping("/sum/{transactionId}")
+    public ResponseEntity<SumResponse> getSum(@PathVariable Long transactionId) {
+        return ResponseEntity.ok(new SumResponse(transactionService.calculateSum(transactionId)));
     }
 }
