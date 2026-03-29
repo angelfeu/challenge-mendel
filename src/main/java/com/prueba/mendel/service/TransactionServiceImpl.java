@@ -6,6 +6,7 @@ import com.prueba.mendel.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -29,5 +30,10 @@ public class TransactionServiceImpl implements TransactionService {
         return transactionRepository.findByType(type).stream()
                 .map(Transaction::getId)
                 .toList();
+    }
+
+    @Override
+    public BigDecimal calculateSum(Long id) {
+        throw new UnsupportedOperationException();
     }
 }

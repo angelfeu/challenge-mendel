@@ -1,9 +1,11 @@
 package com.prueba.mendel.controllers;
 
 import com.prueba.mendel.controller.TransactionController;
-import com.prueba.mendel.dto.TransactionRequest;
 import com.prueba.mendel.dto.StatusResponse;
+import com.prueba.mendel.dto.SumResponse;
+import com.prueba.mendel.dto.TransactionRequest;
 import com.prueba.mendel.exception.GlobalExceptionHandler;
+import com.prueba.mendel.exception.TransactionNotFoundException;
 import com.prueba.mendel.service.TransactionService;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -81,5 +83,21 @@ class TransactionControllerTest extends ControllerTest {
         var response = perform(get("/transactions/types/unknown"), null, List.class, status().isOk());
 
         assertEquals(0, response.size());
+    }
+
+    @Test
+    void get_sum_returns_total() throws Exception {
+        when(transactionService.calculateSum(10L)).thenReturn(BigDecimal.valueOf(20000));
+
+        SumResponse response = perform(get("/transactions/sum/10"), null, SumResponse.class, status().isOk());
+
+        assertEquals(BigDecimal.valueOf(20000), response.getSum());
+    }
+
+    @Test
+    void get_sum_returns_404_when_transaction_not_found() throws Exception {
+        when(transactionService.calculateSum(99L)).thenThrow(new TransactionNotFoundException(99L));
+
+        perform(get("/transactions/sum/99"), status().isNotFound());
     }
 }
