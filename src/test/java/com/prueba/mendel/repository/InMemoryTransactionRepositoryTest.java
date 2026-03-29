@@ -7,7 +7,10 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.List;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InMemoryTransactionRepositoryTest {
@@ -52,6 +55,45 @@ class InMemoryTransactionRepositoryTest {
         List<Transaction> result = repository.findByType("unknown");
 
         assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void find_by_id_returns_transaction_when_exists() {
+        Transaction transaction = Transaction.builder().id(10L).amount(BigDecimal.valueOf(5000)).type("cars").build();
+        repository.save(transaction);
+
+        Optional<Transaction> result = repository.findById(10L);
+
+        assertTrue(result.isPresent());
+        assertEquals(10L, result.get().getId());
+    }
+
+    @Test
+    void find_by_id_returns_empty_when_not_found() {
+        Optional<Transaction> result = repository.findById(99L);
+
+        assertFalse(result.isPresent());
+    }
+
+    @Test
+    void find_by_parent_id_returns_direct_children() {
+        repository.save(Transaction.builder().id(10L).amount(BigDecimal.valueOf(5000)).type("cars").build());
+        repository.save(Transaction.builder().id(11L).amount(BigDecimal.valueOf(10000)).type("shopping").parentId(10L).build());
+        repository.save(Transaction.builder().id(12L).amount(BigDecimal.valueOf(5000)).type("shopping").parentId(10L).build());
+
+        List<Transaction> children = repository.findByParentId(10L);
+
+        assertEquals(2, children.size());
+        assertTrue(children.stream().allMatch(t -> Long.valueOf(10L).equals(t.getParentId())));
+    }
+
+    @Test
+    void find_by_parent_id_returns_empty_when_no_children() {
+        repository.save(Transaction.builder().id(10L).amount(BigDecimal.valueOf(5000)).type("cars").build());
+
+        List<Transaction> children = repository.findByParentId(10L);
+
+        assertTrue(children.isEmpty());
     }
 
     @Test
