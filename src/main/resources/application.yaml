@@ -8,3 +8,21 @@ server:
 logging:
   level:
     com.prueba.mendel: ${LOG_LEVEL:INFO}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+security:
+  api-key: ${API_KEY:secret}
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui

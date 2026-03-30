@@ -91,10 +91,25 @@ El enunciado especifica `PUT /transactions/{id}` para crear transacciones. Sin e
 Si una transacción A declara como padre a B y B declara como padre a A, el cálculo de la suma transitiva entraría en un loop infinito. El enunciado no contempla este caso, pero se decidió implementar la detección al momento del `PUT`: si el `parent_id` genera un ciclo en la cadena de ancestros, la operación retorna un `400 Bad Request`.
 
 **Validación de `parent_id`**
-Hoy es posible registrar una transacción con un `parent_id` que no corresponde a ninguna transacción existente. El sistema no lo rechaza y el cálculo del sum sigue siendo correcto, pero semánticamente se estaría creando una relación rota. Una mejora sería validar la existencia del padre al momento de la creación.
+Se valida la existencia del padre al momento del `PUT`: si el `parent_id` no corresponde a una transacción registrada, la operación retorna un `404 Not Found`.
 
 **Validación del monto**
 El campo `amount` no tiene restricción de valor positivo. Dependiendo de las reglas de negocio, podría tener sentido rechazar montos negativos o iguales a cero.
+
+**CI/CD y caché de dependencias**
+Se tuvo en cuenta la incorporación de un pipeline de GitHub Actions para ejecutar los tests automáticamente en cada push, junto con estrategias de caché de dependencias Gradle para reducir tiempos de build. Para el alcance de este MVP se consideró overkilling: el Dockerfile ya resuelve el build reproducible y los tests se corren localmente antes de commitear.
+
+## Seguridad
+
+Todos los endpoints de la API requieren el header `X-Api-Key`. Las rutas de Swagger, OpenAPI y Actuator quedan excluidas para facilitar la exploración y el monitoreo sin fricción.
+
+```
+X-Api-Key: <valor>
+```
+
+El valor se configura mediante la variable de entorno `API_KEY`. Si no se define, el sistema usa `secret` como valor por defecto (solo para desarrollo local).
+
+En Swagger UI el botón **Authorize** permite ingresar la key antes de ejecutar los endpoints.
 
 ## Correr localmente
 
@@ -104,7 +119,21 @@ Requiere Java 25 instalado.
 ./gradlew bootRun
 ```
 
+Para usar una key distinta al default:
+
+```bash
+API_KEY=mi-clave ./gradlew bootRun
+```
+
 La aplicación levanta en `http://localhost:8080`.
+
+| Recurso | URL |
+|---|---|
+| API | `http://localhost:8080/transactions` |
+| Swagger UI | `http://localhost:8080/swagger-ui/index.html` |
+| OpenAPI JSON | `http://localhost:8080/api-docs` |
+| Health | `http://localhost:8080/actuator/health` |
+| Metrics | `http://localhost:8080/actuator/metrics` |
 
 ## Correr los tests
 
@@ -120,7 +149,7 @@ Requiere Docker instalado y corriendo.
 
 ```bash
 docker build -t mendel-challenge .
-docker run -p 8080:8080 mendel-challenge
+docker run -p 8080:8080 -e API_KEY=mi-clave mendel-challenge
 ```
 
 El Dockerfile usa un build multi-stage: el primer stage resuelve y cachea dependencias, el segundo compila el jar, y el tercero genera la imagen final basada en `eclipse-temurin:25-jre-alpine` para mantener el peso mínimo. La aplicación corre con un usuario sin privilegios de root.
