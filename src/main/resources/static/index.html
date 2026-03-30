@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mendel Transaction Service</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f4f6f9;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 0 2rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,.3);
+    }
+
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: .5px;
+    }
+
+    header span {
+      font-size: .75rem;
+      opacity: .5;
+      margin-left: .5rem;
+      font-weight: 400;
+    }
+
+    .api-key-bar {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+    }
+
+    .api-key-bar label {
+      font-size: .8rem;
+      opacity: .7;
+      white-space: nowrap;
+    }
+
+    .api-key-bar input {
+      background: #2a2a4a;
+      border: 1px solid #3a3a5a;
+      color: #fff;
+      border-radius: 6px;
+      padding: .4rem .8rem;
+      font-size: .85rem;
+      width: 220px;
+      outline: none;
+      transition: border-color .2s;
+    }
+
+    .api-key-bar input:focus { border-color: #6c63ff; }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #444;
+      transition: background .3s;
+    }
+    .status-dot.ok  { background: #22c55e; }
+    .status-dot.err { background: #ef4444; }
+
+    main {
+      max-width: 900px;
+      margin: 2.5rem auto;
+      padding: 0 1.5rem;
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .method {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .5px;
+      padding: .25rem .55rem;
+      border-radius: 4px;
+      color: #fff;
+    }
+    .method.put  { background: #f59e0b; }
+    .method.get  { background: #22c55e; }
+
+    .path {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: .9rem;
+      color: #4a4a6a;
+    }
+
+    .card-desc {
+      font-size: .8rem;
+      color: #888;
+      margin-left: auto;
+    }
+
+    .card-body {
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: .9rem;
+    }
+
+    .fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: .75rem;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: .3rem;
+    }
+
+    .field label {
+      font-size: .75rem;
+      font-weight: 600;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+
+    .field label .optional {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      color: #aaa;
+      margin-left: .3rem;
+    }
+
+    .field input {
+      border: 1.5px solid #e0e0e0;
+      border-radius: 7px;
+      padding: .5rem .75rem;
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      color: #1a1a2e;
+    }
+
+    .field input:focus {
+      border-color: #6c63ff;
+      box-shadow: 0 0 0 3px rgba(108,99,255,.12);
+    }
+
+    .actions { display: flex; gap: .75rem; align-items: center; }
+
+    button.send {
+      background: #6c63ff;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: .55rem 1.4rem;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, transform .1s;
+    }
+
+    button.send:hover  { background: #574fd6; }
+    button.send:active { transform: scale(.97); }
+
+    button.clear {
+      background: none;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 7px;
+      padding: .5rem 1rem;
+      font-size: .85rem;
+      color: #888;
+      cursor: pointer;
+      transition: border-color .2s, color .2s;
+    }
+    button.clear:hover { border-color: #aaa; color: #555; }
+
+    .response {
+      background: #1a1a2e;
+      border-radius: 8px;
+      padding: 1rem;
+      min-height: 56px;
+      display: none;
+    }
+
+    .response.visible { display: block; }
+
+    .response-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: .5rem;
+    }
+
+    .response-status {
+      font-size: .75rem;
+      font-weight: 700;
+      padding: .2rem .6rem;
+      border-radius: 4px;
+      letter-spacing: .3px;
+    }
+    .response-status.ok  { background: #14532d; color: #4ade80; }
+    .response-status.err { background: #450a0a; color: #f87171; }
+
+    .response-time {
+      font-size: .72rem;
+      color: #4a4a6a;
+    }
+
+    pre {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: .82rem;
+      color: #a5b4fc;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: #1a1a2e;
+      color: #fff;
+      padding: .7rem 1.2rem;
+      border-radius: 8px;
+      font-size: .85rem;
+      box-shadow: 0 4px 16px rgba(0,0,0,.25);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .25s, transform .25s;
+      pointer-events: none;
+      z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Mendel Transaction Service <span>v0.1.0</span></h1>
+  <div class="api-key-bar">
+    <label>X-Api-Key</label>
+    <input id="apiKey" type="password" placeholder="secret" value="secret" autocomplete="off" />
+    <div class="status-dot" id="statusDot"></div>
+  </div>
+</header>
+
+<main>
+
+  <!-- PUT /transactions/{id} -->
+  <div class="card">
+    <div class="card-header">
+      <span class="method put">PUT</span>
+      <span class="path">/transactions/<b>{id}</b></span>
+      <span class="card-desc">Crear o actualizar una transacción</span>
+    </div>
+    <div class="card-body">
+      <div class="fields">
+        <div class="field">
+          <label>Transaction ID</label>
+          <input id="put-id" type="number" placeholder="10" />
+        </div>
+        <div class="field">
+          <label>Amount</label>
+          <input id="put-amount" type="number" placeholder="5000" />
+        </div>
+        <div class="field">
+          <label>Type</label>
+          <input id="put-type" type="text" placeholder="cars" />
+        </div>
+        <div class="field">
+          <label>Parent ID <span class="optional">(opcional)</span></label>
+          <input id="put-parent" type="number" placeholder="—" />
+        </div>
+      </div>
+      <div class="actions">
+        <button class="send" onclick="sendPut()">Enviar</button>
+        <button class="clear" onclick="clearResponse('put-response')">Limpiar</button>
+      </div>
+      <div class="response" id="put-response">
+        <div class="response-meta">
+          <span class="response-status" id="put-status"></span>
+          <span class="response-time" id="put-time"></span>
+        </div>
+        <pre id="put-body"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- GET /transactions/types/{type} -->
+  <div class="card">
+    <div class="card-header">
+      <span class="method get">GET</span>
+      <span class="path">/transactions/types/<b>{type}</b></span>
+      <span class="card-desc">IDs por tipo</span>
+    </div>
+    <div class="card-body">
+      <div class="fields">
+        <div class="field">
+          <label>Type</label>
+          <input id="types-type" type="text" placeholder="cars" />
+        </div>
+      </div>
+      <div class="actions">
+        <button class="send" onclick="sendGetTypes()">Enviar</button>
+        <button class="clear" onclick="clearResponse('types-response')">Limpiar</button>
+      </div>
+      <div class="response" id="types-response">
+        <div class="response-meta">
+          <span class="response-status" id="types-status"></span>
+          <span class="response-time" id="types-time"></span>
+        </div>
+        <pre id="types-body"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- GET /transactions/sum/{id} -->
+  <div class="card">
+    <div class="card-header">
+      <span class="method get">GET</span>
+      <span class="path">/transactions/sum/<b>{id}</b></span>
+      <span class="card-desc">Suma transitiva</span>
+    </div>
+    <div class="card-body">
+      <div class="fields">
+        <div class="field">
+          <label>Transaction ID</label>
+          <input id="sum-id" type="number" placeholder="10" />
+        </div>
+      </div>
+      <div class="actions">
+        <button class="send" onclick="sendGetSum()">Enviar</button>
+        <button class="clear" onclick="clearResponse('sum-response')">Limpiar</button>
+      </div>
+      <div class="response" id="sum-response">
+        <div class="response-meta">
+          <span class="response-status" id="sum-status"></span>
+          <span class="response-time" id="sum-time"></span>
+        </div>
+        <pre id="sum-body"></pre>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  function apiKey() {
+    return document.getElementById('apiKey').value.trim();
+  }
+
+  function headers(withBody) {
+    const h = { 'X-Api-Key': apiKey() };
+    if (withBody) h['Content-Type'] = 'application/json';
+    return h;
+  }
+
+  function setDot(ok) {
+    const dot = document.getElementById('statusDot');
+    dot.className = 'status-dot ' + (ok ? 'ok' : 'err');
+  }
+
+  function showResponse(prefix, status, body, ms) {
+    const box    = document.getElementById(prefix + '-response');
+    const stEl   = document.getElementById(prefix + '-status');
+    const timeEl = document.getElementById(prefix + '-time');
+    const bodyEl = document.getElementById(prefix + '-body');
+
+    const ok = status >= 200 && status < 300;
+    stEl.textContent = status + ' ' + (ok ? 'OK' : 'ERROR');
+    stEl.className   = 'response-status ' + (ok ? 'ok' : 'err');
+    timeEl.textContent = ms + ' ms';
+
+    try { bodyEl.textContent = JSON.stringify(JSON.parse(body), null, 2); }
+    catch { bodyEl.textContent = body; }
+
+    box.classList.add('visible');
+    setDot(ok);
+  }
+
+  function clearResponse(id) {
+    document.getElementById(id).classList.remove('visible');
+  }
+
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2500);
+  }
+
+  async function request(method, url, body) {
+    const t0 = performance.now();
+    try {
+      const opts = { method, headers: headers(!!body) };
+      if (body) opts.body = JSON.stringify(body);
+      const res  = await fetch(url, opts);
+      const text = await res.text();
+      return { status: res.status, body: text, ms: Math.round(performance.now() - t0) };
+    } catch (e) {
+      return { status: 0, body: e.message, ms: Math.round(performance.now() - t0) };
+    }
+  }
+
+  async function sendPut() {
+    const id     = document.getElementById('put-id').value.trim();
+    const amount = document.getElementById('put-amount').value.trim();
+    const type   = document.getElementById('put-type').value.trim();
+    const parent = document.getElementById('put-parent').value.trim();
+
+    if (!id || !amount || !type) { toast('Completá ID, amount y type'); return; }
+
+    const body = { amount: Number(amount), type };
+    if (parent) body.parent_id = Number(parent);
+
+    const r = await request('PUT', `/transactions/${id}`, body);
+    showResponse('put', r.status, r.body, r.ms);
+  }
+
+  async function sendGetTypes() {
+    const type = document.getElementById('types-type').value.trim();
+    if (!type) { toast('Ingresá un type'); return; }
+
+    const r = await request('GET', `/transactions/types/${encodeURIComponent(type)}`);
+    showResponse('types', r.status, r.body, r.ms);
+  }
+
+  async function sendGetSum() {
+    const id = document.getElementById('sum-id').value.trim();
+    if (!id) { toast('Ingresá un ID'); return; }
+
+    const r = await request('GET', `/transactions/sum/${id}`);
+    showResponse('sum', r.status, r.body, r.ms);
+  }
+
+  // Enter key en cualquier input dispara el botón de esa card
+  document.querySelectorAll('.card input').forEach(input => {
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') e.target.closest('.card').querySelector('button.send').click();
+    });
+  });
+</script>
+</body>
+</html>
