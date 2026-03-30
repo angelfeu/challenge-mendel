@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.prueba.mendel.exception.CircularReferenceException;
 import com.prueba.mendel.exception.TransactionNotFoundException;
 
 import java.math.BigDecimal;
@@ -99,7 +100,39 @@ class TransactionServiceImplTest {
     }
 
     @Test
+    void save_throws_when_parent_does_not_exist() {
+        when(transactionRepository.findById(99L)).thenReturn(Optional.empty());
+
+        TransactionRequest request = new TransactionRequest("cars", BigDecimal.valueOf(5000), 99L);
+
+        assertThrows(TransactionNotFoundException.class, () -> transactionService.save(10L, request));
+    }
+
+    @Test
+    void save_throws_when_direct_circular_reference() {
+        Transaction t10 = Transaction.builder().id(10L).amount(BigDecimal.valueOf(5000)).type("cars").build();
+        when(transactionRepository.findById(10L)).thenReturn(Optional.of(t10));
+
+        TransactionRequest request = new TransactionRequest("cars", BigDecimal.valueOf(5000), 10L);
+
+        assertThrows(CircularReferenceException.class, () -> transactionService.save(10L, request));
+    }
+
+    @Test
+    void save_throws_when_transitive_circular_reference() {
+        // tries to save 10 with parent 11, but 11's parent is already 10 → circular
+        Transaction t11 = Transaction.builder().id(11L).amount(BigDecimal.valueOf(1000)).type("cars").parentId(10L).build();
+        when(transactionRepository.findById(11L)).thenReturn(Optional.of(t11));
+
+        TransactionRequest request = new TransactionRequest("cars", BigDecimal.valueOf(1000), 11L);
+
+        assertThrows(CircularReferenceException.class, () -> transactionService.save(10L, request));
+    }
+
+    @Test
     void save_maps_parent_id_when_present() {
+        Transaction t10 = Transaction.builder().id(10L).amount(BigDecimal.valueOf(5000)).type("cars").build();
+        when(transactionRepository.findById(10L)).thenReturn(Optional.of(t10));
         TransactionRequest request = new TransactionRequest("shopping", BigDecimal.valueOf(10000), 10L);
 
         transactionService.save(11L, request);
