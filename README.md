@@ -129,11 +129,16 @@ La aplicación levanta en `http://localhost:8080`.
 
 | Recurso | URL |
 |---|---|
+| UI | `http://localhost:8080` |
 | API | `http://localhost:8080/transactions` |
 | Swagger UI | `http://localhost:8080/swagger-ui/index.html` |
 | OpenAPI JSON | `http://localhost:8080/api-docs` |
 | Health | `http://localhost:8080/actuator/health` |
 | Metrics | `http://localhost:8080/actuator/metrics` |
+
+### UI de prueba
+
+La aplicación incluye una interfaz web en `http://localhost:8080` para probar los tres endpoints sin necesidad de curl ni Postman. Permite ingresar el `X-Api-Key` directamente en el header de la página, visualiza el status code, el tiempo de respuesta y el JSON formateado de cada llamada.
 
 ## Correr los tests
 
